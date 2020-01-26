@@ -1,0 +1,111 @@
+﻿@model CRUD_Image.Models.CustomerVM
+
+@{
+    ViewBag.Title = "Edit";
+}
+
+<h2>Edit</h2>
+
+
+@using (Html.BeginForm("Edit", "Home", FormMethod.Post, new { enctype = "multipart/form-data" }))
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+        <h4>Customer</h4>
+        <hr />
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        @Html.HiddenFor(model => model.CustomerID)
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Name, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Country, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.Country, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.Country, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.ImageUrl, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                <img id="previewImage" src="@Url.Content(Session["ImageUrl"].ToString())" style="height:80px; width:80px;" />
+                <input type="file" id="file" name="file" />
+                <input type="hidden" name="Files" id="uploadedFile" />
+                <input type="hidden" name="FileName" id="uploadedFileName" />
+                <label id="error"></label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <input type="submit" value="Save" class="btn btn-default" />
+            </div>
+        </div>
+    </div>
+}
+
+<div>
+    @Html.ActionLink("Back to List", "Index")
+</div>
+
+<script src="~/Scripts/jquery-3.4.1.min.js"></script>
+
+<script src="~/ResizeImage/binaryajax.js"></script>
+<script src="~/ResizeImage/canvasResize.js"></script>
+<script src="~/ResizeImage/exif.js"></script>
+
+<script>
+    // Image
+    $('input[name=file]').change(function (input) {
+        const file = input.target.files[0];
+        const valid = ["image/jpg", "image/jpeg", "image/png", "image/gif"];
+
+        var fileExtension = $(this).val().split('.').pop();
+        $("#uploadedFileName").val(uniqueName() + "." + fileExtension);
+
+        if ($.inArray(file["type"], valid) < 0) {
+            $("#error").text('Please upload file having extensions .jpeg/.jpg/.png/.gif only');
+            $(':input[type="submit"]').prop('disabled', true);
+            return false;
+        } else {
+            $("#error").text('');
+            $(':input[type="submit"]').prop('disabled', false);
+
+            if (file.type === "image/gif") {
+                var reader = new FileReader();
+                reader.addEventListener("load", function () {
+                    $("#uploadedFile").val(reader.result.split(",")[1]);
+                    $("#previewImage").attr('src', reader.result);
+                }, false);
+
+                if (file) reader.readAsDataURL(file);
+            } else {
+                canvasResize(file, {
+                    width: 750,
+                    quality: 40,
+                    callback: function (data) {
+                        $("#uploadedFile").val(data.split(",")[1]);
+                        $("#previewImage").attr('src', data);
+                        console.log(data)
+                    }
+                });
+            }
+        }
+    });
+
+    function uniqueName() {
+        function chr4() {
+            return Math.random().toString(16).slice(-4);
+        }
+
+        return chr4() + chr4() + '-' + chr4() + '-' + chr4() + '-' + chr4() + '-' + chr4() + chr4() + chr4();
+    }
+</script>
