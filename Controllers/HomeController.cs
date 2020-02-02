@@ -1,11 +1,7 @@
 ﻿using CRUD_Image.Models;
-using System;
-using System.Collections.Generic;
 using System.Data.Entity;
 using System.IO;
 using System.Linq;
-using System.Web;
-using System.Web.Helpers;
 using System.Web.Mvc;
 
 namespace CRUD_Image.Controllers
@@ -13,12 +9,12 @@ namespace CRUD_Image.Controllers
     public class HomeController : Controller
     {
         // GET: Home
-        MVC_TestEntities db = new MVC_TestEntities();
-        
+        private readonly MVC_TestEntities _db = new MVC_TestEntities();
+
         //Index
         public ActionResult Index()
         {
-            var model = db.Customers.ToList();
+            var model = _db.Customers.ToList();
             return View(model);
         }
 
@@ -41,37 +37,35 @@ namespace CRUD_Image.Controllers
                 ImageUrl = customers.ImageUrl,
                 Name = customers.Name
             };
-         
-            db.Customers.Add(newCustomer);
-            var addedd = db.SaveChanges();
 
-            if (addedd > 0)
-            {
-                file.SaveAs(path);
-                ViewBag.message = "Image addedd";
-                ModelState.Clear();
-            }
+            _db.Customers.Add(newCustomer);
+            var added = _db.SaveChanges();
 
-           return RedirectToAction("Index");
+            if (added <= 0) return RedirectToAction($"Index");
+
+            file.SaveAs(path);
+            ViewBag.message = "Image added";
+            ModelState.Clear();
+
+            return RedirectToAction($"Index");
         }
 
         //Edit
         public ActionResult Edit(int? id)
         {
             if (id == null) return RedirectToAction("Index");
-            var model = db.Customers.Find(id);
+
+            var model = _db.Customers.Find(id);
             var c = new CustomerVM
             {
-                CustomerID=model.CustomerID,
+                CustomerID = model.CustomerID,
                 Country = model.Country,
                 Name = model.Name,
                 ImageUrl = model.ImageUrl
             };
-            
+
 
             Session["ImageUrl"] = model.ImageUrl;
-
-            if (model == null) return RedirectToAction("Index");
 
             return View(c);
         }
@@ -79,8 +73,8 @@ namespace CRUD_Image.Controllers
         [HttpPost]
         public ActionResult Edit(CustomerVM customers)
         {
-            if(!ModelState.IsValid) RedirectToAction("Edit");
-            var model = db.Customers.Find(customers.CustomerID);
+            if (!ModelState.IsValid) RedirectToAction("Edit");
+            var model = _db.Customers.Find(customers.CustomerID);
 
             if (customers.Files != null)
             {
@@ -88,32 +82,39 @@ namespace CRUD_Image.Controllers
                 var path = Path.Combine(Server.MapPath("~/images/"), file.FileName);
 
                 customers.ImageUrl = "~/images/" + file.FileName;
-                model.Country = customers.Country;
-                model.Name  = customers.Name;
-                model.ImageUrl = customers.ImageUrl;
 
+                if (model != null)
+                {
+                    model.Country = customers.Country;
+                    model.Name = customers.Name;
+                    model.ImageUrl = customers.ImageUrl;
 
-                db.Entry(model).State = EntityState.Modified;
-                var addedd = db.SaveChanges();
+                    _db.Entry(model).State = EntityState.Modified;
+                }
+
+                var added = _db.SaveChanges();
                 var oldImage = Request.MapPath(Session["ImageUrl"].ToString());
 
-                if (addedd > 0)
-                {
-                    file.SaveAs(path);
+                if (added <= 0) return RedirectToAction("Index");
 
-                    var imageExsits = System.IO.File.Exists(oldImage);
-                    if (imageExsits)
-                    {
-                        System.IO.File.Delete(oldImage);
-                    }
-                }
+
+                var imageExists = System.IO.File.Exists(oldImage);
+                if (imageExists)
+                    System.IO.File.Delete(oldImage);
+
+
+                file.SaveAs(path);
             }
             else
             {
-                model.Country = customers.Country;
-                model.Name = customers.Name;
-                db.Entry(model).State = EntityState.Modified;
-                db.SaveChanges();
+                if (model != null)
+                {
+                    model.Country = customers.Country;
+                    model.Name = customers.Name;
+                    _db.Entry(model).State = EntityState.Modified;
+                }
+
+                _db.SaveChanges();
             }
 
             return RedirectToAction("Index");
@@ -124,22 +125,20 @@ namespace CRUD_Image.Controllers
         {
             if (id == null) return RedirectToAction("Index");
 
-            var model = db.Customers.Find(id);
+            var model = _db.Customers.Find(id);
 
             if (model == null) return RedirectToAction("Index");
 
             var currentImage = Request.MapPath(model.ImageUrl);
-            db.Entry(model).State = EntityState.Deleted;
-           
-            var addedd = db.SaveChanges();
-            if (addedd > 0)
-            {
-                var imageExsits = System.IO.File.Exists(currentImage);
-                if (imageExsits)
-                {
-                    System.IO.File.Delete(currentImage);
-                }
-            }
+            _db.Entry(model).State = EntityState.Deleted;
+
+            var added = _db.SaveChanges();
+            if (added <= 0) return RedirectToAction("Index");
+
+            var imageExists = System.IO.File.Exists(currentImage);
+            if (imageExists)
+                System.IO.File.Delete(currentImage);
+
 
             return RedirectToAction("Index");
         }

@@ -37,7 +37,7 @@
                 <input type="file" id="file" name="file" />
                 <input type="hidden" name="Files" id="uploadedFile" />
                 <input type="hidden" name="FileName" id="uploadedFileName" />
-                <img id="previewImage" style="width:120px" />
+                <img id="previewImage" style="width:120px" alt=""/>
                 <label id="error"></label>
             </div>
         </div>
@@ -66,7 +66,7 @@
         const file = input.target.files[0];
         const valid = ["image/jpg", "image/jpeg", "image/png", "image/gif"];
 
-        var fileExtension = $(this).val().split('.').pop();
+        const fileExtension = $(this).val().split('.').pop();
         $("#uploadedFileName").val(uniqueName() + "." + fileExtension);
 
         if ($.inArray(file["type"], valid) < 0) {
